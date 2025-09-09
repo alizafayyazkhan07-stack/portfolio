@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo E-commerce Store</title>
+<style>
+/* Reset & basic styles */
+body {font-family: Arial, sans-serif; margin:0; background:#f5f5f5;}
+header {background:#333;color:#fff;padding:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+header a {color:#fff;margin-right:1rem;text-decoration:none;}
+header input {padding:0.4rem;border-radius:5px;border:none;}
+.filters {display:flex;justify-content:center;padding:1rem;}
+.filters select {margin:0 0.5rem;padding:0.4rem;border-radius:5px;}
+.products {display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;padding:2rem;}
+.product-card {background:#fff;padding:1rem;border-radius:8px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.product-card img {max-width:100%;border-radius:8px;transition:transform 0.3s;}
+.product-card img:hover {transform:scale(1.1);}
+.product-card button {margin-top:0.5rem;padding:0.5rem 1rem;border:none;background:#ff6b6b;color:#fff;border-radius:5px;cursor:pointer;}
+.cart {position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:2rem;border-radius:10px;box-shadow:0 5px 20px rgba(0,0,0,0.3);z-index:1000;display:none;}
+.cart ul {list-style:none;margin-bottom:1rem;padding:0;}
+.cart button {padding:0.5rem 1rem;margin-right:0.5rem;border:none;border-radius:5px;cursor:pointer;}
+.newsletter-popup {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;display:flex;}
+.popup-content {background:#fff;padding:2rem;border-radius:10px;text-align:center;position:relative;}
+.close-btn {position:absolute;top:10px;right:15px;cursor:pointer;font-size:1.5rem;}
+.popup-content input {padding:0.5rem;width:70%;margin:1rem 0;border-radius:5px;border:1px solid #ccc;}
+.popup-content button {padding:0.5rem 1rem;border:none;background:#ff6b6b;color:#fff;border-radius:5px;cursor:pointer;}
+footer {text-align:center;padding:1rem;background:#333;color:#fff;margin-top:2rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Demo Store</h1>
+  <nav>
+    <a href="#">Home</a>
+    <a href="#" onclick="openCart()">Cart (<span id="cart-count">0</span>)</a>
+    <input type="text" id="search" placeholder="Search..." onkeyup="searchProducts()">
+  </nav>
+</header>
+
+<section class="filters">
+  <select id="category-filter" onchange="filterProducts()">
+    <option value="all">All Categories</option>
+    <option value="Clothing">Clothing</option>
+    <option value="Shoes">Shoes</option>
+    <option value="Accessories">Accessories</option>
+  </select>
+  <select id="price-filter" onchange="filterProducts()">
+    <option value="all">All Prices</option>
+    <option value="0-20">$0 - $20</option>
+    <option value="21-50">$21 - $50</option>
+    <option value="51-100">$51 - $100</option>
+  </select>
+</section>
+
+<main>
+  <section class="products" id="products"></section>
+</main>
+
+<section class="cart" id="cart">
+  <h2>Your Cart</h2>
+  <ul id="cart-items"></ul>
+  <p>Total: $<span id="cart-total">0.00</span></p>
+  <button onclick="checkout()">Checkout</button>
+  <button onclick="closeCart()">Close</button>
+</section>
+
+<div id="newsletter-popup" class="newsletter-popup">
+  <div class="popup-content">
+    <span class="close-btn" onclick="closeNewsletter()">&times;</span>
+    <h3>Subscribe to our Newsletter!</h3>
+    <input type="email" id="newsletter-email" placeholder="Enter your email">
+    <button onclick="subscribeNewsletter()">Subscribe</button>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2025 Demo Store</p>
+</footer>
+
+<script>
+// Product Data
+const products = [
+  {id:1,name:"T-Shirt",price:19.99,category:"Clothing",img:"https://feature.com/cdn/shop/files/Essentials-Tee---Black-125SU244280F---07-19-24---Feature--JP.jpg?v=1721427960&width=2560"},
+  {id:2,name:"Jeans",price:49.99,category:"Clothing",img:"https://oldnavy.gap.com/webcontent/0056/918/703/cn56918703.jpg?q=h&w=480"},
+  {id:3,name:"Sneakers",price:59.99,category:"Shoes",img:"https://images.dsw.com/is/image/DSWShoes/596885_161_ss_03?impolicy=qlt-medium-high&imwidth=640&imdensity=2"},
+  {id:4,name:"Hat",price:14.99,category:"Accessories",img:"https://tse2.mm.bing.net/th/id/OIP.EjsJE0i4umLWAe2I2hzdlQHaHa?pid=Api&P=0&h=220"},
+  {id:5,name:"Dress",price:39.99,category:"Clothing",img:"https://tse2.mm.bing.net/th/id/OIP.yfoDA9QYvCVAk2Uao_QWgAHaMV?pid=Api&P=0&h=220"},
+];
+
+let cart = [];
+let reviews = ["Great quality!", "Loved it!", "Highly recommend!", "Good value!"];
+
+// Load products
+function displayProducts(list=products){
+  const container = document.getElementById("products");
+  container.innerHTML="";
+  list.forEach(p=>{
+    const card = document.createElement("div");
+    card.className="product-card";
+    card.innerHTML=`<img src="${p.img}" alt="${p.name}">
+      <h3>${p.name}</h3>
+      <p>$${p.price.toFixed(2)}</p>
+      <button onclick="addToCart(${p.id})">Add to Cart</button>
+      <p class="reviews">Review: "${reviews[Math.floor(Math.random()*reviews.length)]}"</p>`;
+    container.appendChild(card);
+  });
+}
+
+// Add to cart
+function addToCart(id){
+  const product = products.find(p=>p.id===id);
+  if(product){cart.push(product);updateCartCount();openCart();}
+}
+function updateCartCount(){
+  document.getElementById("cart-count").innerText=cart.length;
+}
+
+// Cart functions
+function openCart(){
+  const cartSection=document.getElementById("cart");
+  cartSection.style.display="block";
+  const items=document.getElementById("cart-items");
+  const totalEl=document.getElementById("cart-total");
+  items.innerHTML="";let total=0;
+  cart.forEach((item,i)=>{
+    const li=document.createElement("li");
+    li.innerHTML=`${item.name} - $${item.price.toFixed(2)} <button onclick="removeFromCart(${i})">Remove</button>`;
+    items.appendChild(li);total+=item.price;
+  });
+  totalEl.innerText=total.toFixed(2);
+}
+function closeCart(){document.getElementById("cart").style.display="none";}
+function removeFromCart(i){cart.splice(i,1);updateCartCount();openCart();}
+function checkout(){if(cart.length===0){alert("Cart empty");return;}let total=cart.reduce((a,b)=>a+b.price,0).toFixed(2);alert(`Thank you! Total: $${total}`);cart=[];updateCartCount();closeCart();}
+
+// Search & filter
+function searchProducts(){const q=document.getElementById("search").value.toLowerCase();displayProducts(products.filter(p=>p.name.toLowerCase().includes(q)));}
+function filterProducts(){let list=products;const c=document.getElementById("category-filter").value;const p=document.getElementById("price-filter").value;if(c!=="all") list=list.filter(x=>x.category===c);if(p!=="all"){const [min,max]=p.split("-").map(Number);list=list.filter(x=>x.price>=min && x.price<=max);} displayProducts(list);}
+
+// Newsletter
+function showNewsletter(){document.getElementById("newsletter-popup").style.display="flex";}
+function closeNewsletter(){document.getElementById("newsletter-popup").style.display="none";}
+function subscribeNewsletter(){const e=document.getElementById("newsletter-email").value;if(!e){alert("Enter valid email");return;}alert(`Subscribed: ${e}`);closeNewsletter();}
+
+// Initialize
+window.onload=()=>{displayProducts();setTimeout(showNewsletter,5000);};
+</script>
+
+</body>
+</html>
+
